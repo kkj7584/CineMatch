@@ -448,6 +448,6 @@ def result() :  # 응답 함수
 
 
 # 프로그램 시작점 
-if __name__ == '__main__' :
-    app.run(host = '127.0.0.1', port = 80)
-    
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))  # Render가 지정한 PORT 사용
+    app.run(host="0.0.0.0", port=port)
