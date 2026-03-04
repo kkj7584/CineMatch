@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>영화 검색엔진 CineMatch</title>
+    <style>
+        .search-box select {
+            height: 48px;              /* input 높이 맞춤 */
+            padding: 0 15px;
+            font-size: 16px;
+            border: 1px solid #dfe1e5;
+            border-radius: 24px;       /* input과 동일하게 둥글게 */
+            outline: none;
+            box-shadow: 0 1px 6px rgba(32,33,36,0.1);
+            background-color: white;
+        }
+        [name="method"]{
+            margin-right:10px;
+        }
+        #yr{
+            font-size:14px;
+            width:100px;
+        }
+        [name="year"]{
+            width:200px;
+            font-size:14px;
+        }
+        .search-box form {
+            display: flex;
+            flex-direction:column;
+            align-items: center;
+            width: 100%;
+        }
+        .search-box form .searcha {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap:5px;
+        }
+        .search-box form .searchb {
+            margin-top:15px;
+            display: flex;
+            justify-content:center;
+            align-items: center;
+            flex-wrap:wrap;
+            column-gap: 15px;
+            width: 140%;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+        }
+
+        .logo {
+            font-size: 64px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            letter-spacing: -2px;
+        }
+
+        .search-box {
+            width: 100%;
+            max-width: 750px;
+            display: flex;
+            justify-content: center;
+            margin-bottom:50px;
+        }
+
+        .search-box input[name="query"] {
+            width: 70%;
+            padding: 14px 20px;
+            font-size: 16px;
+            border: 1px solid #dfe1e5;
+            border-radius: 24px;
+            outline: none;
+            box-shadow: 0 1px 6px rgba(32,33,36,0.1);
+            transition: box-shadow 0.2s ease;
+        }
+
+        .search-box input[name="query"]:focus {
+            box-shadow: 0 1px 6px rgba(32,33,36,0.3);
+        }
+
+        .buttons {
+            display:flex;
+            justify-content:center;
+        }
+
+        .buttons button {
+            margin: 5px;
+            padding: 10px 10px;
+            font-size: 14px;
+            border: 1px solid #f2f2f2;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            width:60px;
+        }
+
+        .buttons button:hover {
+            border: 1px solid #dadce0;
+        }
+
+        .results-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .movie-card {
+        width: 70%;
+        background-color: #f2f2f2;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 20px 0;
+        display: flex;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .poster {
+        width: 150px;
+        min-width: 150px;
+        height: 220px;
+        background-color: #ddd;
+        border-radius: 8px;
+        margin-right: 20px;
+        object-fit: cover;
+    }
+
+    .movie-info {
+        flex: 1;
+    }
+
+    .title {
+        font-size: 22px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .original-title {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 10px;
+    }
+
+    .meta {
+        font-size: 14px;
+        margin-bottom: 10px;
+        line-height: 1.6;
+    }
+
+    .overview {
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+    .rating {
+        font-weight: bold;
+        color: #e67e22;
+    }
+
+    .search-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 32vh;
+        width:100%;
+    }
+    </style>
+</head>
+<body>
+    <div class="search-section">
+        <div class="logo">CineMatch</div>
+        <div class="search-box">
+            <form method="post" action="/result">
+                <div class="searcha">
+                    <select name="method">
+                        <option value="title" {% if meth=="title" %} selected {% endif %}>제목별 검색</option>
+                        <option value="country" {% if meth=="country" %} selected {% endif %}>국가별 검색</option>
+                        <option value="language" {% if meth=="language" %} selected {% endif %}>언어별 검색</option>
+                    </select>
+                    <input type="text" name="query" value="{{keywordq}}" placeholder="검색어를 입력하세요">
+                    <div class="buttons">
+                        <button type="submit">검색</button>
+                    </div>
+                    <select name="year" id="year">
+                        <option value="all" {% if gys=="all" %} selected {% endif %}>개봉년도 전체</option>
+                        {% for y in range(1976, 2027) | reverse %}
+                        <option value="{{ y }}" {% if gys and gys|int == y %} selected {% endif %}>{{ y }}년</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="searchb">
+                    <span>
+                        <input type="checkbox" name="all" id="all" value="True" {% if 'all' in sg %} checked {% endif %}/>
+                        <label for="all">전체</label>
+                    </span>
+                    {% for i in range(19) %}
+                        <span>
+                            <input type="checkbox" name="{{genrep[i]}}" id="genre{{i}}" value="True" {% if genrep[i] in sg or 'all' in sg %} checked {% endif %}/>
+                            <label for="genre{{i}}">{{genrep[i]}}</label>
+                        </span>
+                    {% endfor %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- 영화 1-5 -->
+    <div class="results-container">
+        {% for i in range(10) %}
+        <div class="movie-card">
+            <img src="https://image.tmdb.org/t/p/w500{{poster[i]}}" alt="포스터 정보를 불러올 수 없습니다" class="poster">
+            <div class="movie-info">
+                <div class="title">{{title[i]}}</div>
+                <div class="original-title">{{original_title[i]}}</div>
+                <div class="meta">
+                    언어: {{languages[i]}}<br>
+                    국가: {{country[i]}}<br>
+                    장르: {{genre[i]}}<br>
+                    개봉연도: {{year[i]}}
+                </div>
+                <div class="overview">
+                    {{overview[i]}}
+                </div>
+                <div class="rating">
+                    평점: {{vote[i]}}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <script>
+        document.getElementById("all").addEventListener("change", function() {
+
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#all)');
+
+            checkboxes.forEach(function(cb) {
+                cb.checked = document.getElementById("all").checked;
+            });
+        });
+    </script>
+</body>
+</html>
