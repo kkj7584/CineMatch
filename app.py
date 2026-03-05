@@ -6,6 +6,7 @@ jinja2 표현식
 """
 
 from flask import Flask, render_template, request # html 페이지 호출 
+import os
 
 # 1. app 객체 생성 
 app = Flask(__name__) 
@@ -199,6 +200,16 @@ language_ko_map = {
 "Ndonga": "은동가어"
 }
 
+from babel import Locale
+
+locale = Locale('ko')
+
+country_dict = {
+    code: locale.territories.get(code)
+    for code in locale.territories
+    if len(code) == 2  # ISO alpha-2 코드만
+}
+
 import pandas as pd
 import glob
 
@@ -258,6 +269,28 @@ movie_embeddings = model.encode(movie_texts, normalize_embeddings=True)
 @app.route("/") # 요청1 : http://127.0.0.1:80/
 def index() : # 응답 함수 
     return render_template('/index.html',genrep=genre) # 응답 페이지 
+
+def matchorder(q,klang,kcount,method,t,ot,plang,pcount):
+    if method=='title':
+        t=t.lower().replace(' ','')
+        ot=ot.lower().replace(' ','')
+        if t.startswith(q) or ot.startswith(q):
+            return 1
+        else:
+            return 0
+    elif method=='language':
+        nlang=[a for a in klang if (language_ko_map[a]).startswith(q)]
+        for nl in nlang:
+            if nl in plang:
+                return 1
+        return 0
+    elif method=='country':
+        ncount=[a for a in kcount if (country_dict[a]).startswith(q)]
+        for nc in ncount:
+            if nc in pcount:
+                return 1
+        return 0
+    return 0
 
 @app.route('/result', methods=['POST']) # post방식 전송 
 def result() :  # 응답 함수
@@ -341,16 +374,6 @@ def result() :  # 응답 함수
         )
         thr_exact_idx=df[mask].index
 
-    from babel import Locale
-
-    locale = Locale('ko')
-
-    country_dict = {
-    code: locale.territories.get(code)
-    for code in locale.territories
-    if len(code) == 2  # ISO alpha-2 코드만
-    }
-
     keycount=[]
     for u,v in country_dict.items():
         if v==query:
@@ -411,7 +434,7 @@ def result() :  # 응답 함수
 
     top_k_idx = sorted(
         top_k_idx,
-        key=lambda x: (1 if x in exact_idx else 0,1 if x in sec_exact_idx else 0,1 if x in thr_exact_idx else 0,1 if x in fth_exact_idx else 0,1 if x in fif_exact_idx else 0,df.iloc[x]['year'],-df.iloc[x]['no'])
+        key=lambda x: (matchorder(query,keylang,keycount,method,df.iloc[x]['title'],df.iloc[x]['original_title'],df.iloc[x]['languages'].split(', '),df.iloc[x]['countries'].split(', ')),1 if x in exact_idx else 0,1 if x in sec_exact_idx else 0,1 if x in thr_exact_idx else 0,1 if x in fth_exact_idx else 0,1 if x in fif_exact_idx else 0,df.iloc[x]['year'],-df.iloc[x]['no'])
         )
     
     t=[]
