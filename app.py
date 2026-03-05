@@ -324,12 +324,16 @@ def result() :  # 응답 함수
         if v==query or v==query+'어':
             keylang.append(u)
             break
+    if keylang==[]:
+        for u,v in language_ko_map.items():
+            if query in v:
+                keylang.append(u)
     
     thr_exact_idx=[]
     
     if len(keylang)>0 and method=='language':
         mask = df.apply(
-            lambda row: all(
+            lambda row: any(
             g in [str(css) for css in row["languages"].split(', ')]
             for g in keylang
             ),
@@ -352,12 +356,16 @@ def result() :  # 응답 함수
         if v==query:
             keycount.append(u)
             break
+    if keycount==[]:
+        for u,v in country_dict.items():
+            if query in v:
+                keycount.append(u)
     
     fth_exact_idx=[]
     
     if len(keycount)>0 and method=='country':
         mask = df.apply(
-            lambda row: all(
+            lambda row: any(
             g in [str(css) for css in row["countries"].split(', ')]
             for g in keycount
             ),
