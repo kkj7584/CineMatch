@@ -270,12 +270,20 @@ movie_embeddings = model.encode(movie_texts, normalize_embeddings=True)
 def index() : # 응답 함수 
     return render_template('/index.html',genrep=genre) # 응답 페이지 
 
-def matchorder(q,klang,kcount,method,t,ot,plang,pcount):
+def matchorder(oq,q,klang,kcount,method,t,ot,plang,pcount):
     if method=='title':
+        x1=t.lower()
+        x2=ot.lower()
         t=t.lower().replace(' ','')
         ot=ot.lower().replace(' ','')
-        if t.startswith(q) or ot.startswith(q):
+        if x1.startswith(oq) or x2.startswith(oq):
             return 1
+        elif t.startswith(q) or ot.startswith(q):
+            return 0.9
+        elif oq in x1 or oq in x2:
+            return 0.6
+        elif q in x1 or q in x2:
+            return 0.3
         else:
             return 0
     elif method=='language':
@@ -296,6 +304,8 @@ def matchorder(q,klang,kcount,method,t,ot,plang,pcount):
 def result() :  # 응답 함수
 
     query=request.form['query']
+    realoriginq=query
+    originq=query.lower()
     query = query.lower().replace(" ", "")
     query_embedding = model.encode(query, normalize_embeddings=True)
 
@@ -434,7 +444,7 @@ def result() :  # 응답 함수
 
     top_k_idx = sorted(
         top_k_idx,
-        key=lambda x: (matchorder(query,keylang,keycount,method,df.iloc[x]['title'],df.iloc[x]['original_title'],df.iloc[x]['languages'].split(', '),df.iloc[x]['countries'].split(', ')),1 if x in exact_idx else 0,1 if x in sec_exact_idx else 0,1 if x in thr_exact_idx else 0,1 if x in fth_exact_idx else 0,1 if x in fif_exact_idx else 0,df.iloc[x]['year'],-df.iloc[x]['no'])
+        key=lambda x: (matchorder(originq,query,keylang,keycount,method,df.iloc[x]['title'],df.iloc[x]['original_title'],df.iloc[x]['languages'].split(', '),df.iloc[x]['countries'].split(', ')),1 if x in exact_idx else 0,1 if x in sec_exact_idx else 0,1 if x in thr_exact_idx else 0,1 if x in fth_exact_idx else 0,1 if x in fif_exact_idx else 0,df.iloc[x]['year'],-df.iloc[x]['no'])
         )
     
     t=[]
@@ -475,7 +485,7 @@ def result() :  # 응답 함수
         p.append(df.iloc[idx]["poster_path"])
     
     return render_template('/result.html',
-                                    keywordq=query,title=t,original_title=o,languages=l,country=c,genre=g,year=y,overview=overv,vote=v,poster=p,genrep=genre,sg=selectedg,gys=getyear,meth=method) # 응답 페이지 
+                                    keywordq=realoriginq,title=t,original_title=o,languages=l,country=c,genre=g,year=y,overview=overv,vote=v,poster=p,genrep=genre,sg=selectedg,gys=getyear,meth=method) # 응답 페이지 
 
 
 # 프로그램 시작점 
