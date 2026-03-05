@@ -400,7 +400,10 @@ def result() :  # 응답 함수
             
             if len(sec_exact_idx)<500:
                 mask = df.apply(
-                    lambda row: keygenre[0] in str(row["genres"]),
+                    lambda row: any(
+                    g in str(row["genres"])
+                    for g in keygenre
+                    ),
                     axis=1
                 )
                 st_exact_idx = df[mask].index
