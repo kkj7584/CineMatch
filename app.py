@@ -212,22 +212,51 @@ country_dict = {
 
 import pandas as pd
 import glob
+from huggingface_hub import hf_hub_download
 
+'''
 path = "Crawled_Data/*.csv"
 file_list = glob.glob(path)
 
 df_list = [pd.read_csv(file) for file in file_list]
 
 df = pd.concat(df_list, ignore_index=True)
+'''
+files = [
+"Crawled_Data/backup_until_1976_1986.csv",
+"Crawled_Data/backup_until_1987_2001.csv",
+"Crawled_Data/backup_until_2002_2006.csv",
+"Crawled_Data/backup_until_2007_2011.csv",
+"Crawled_Data/backup_until_2012_2025.csv",
+"Crawled_Data/backup_until_2026_2026.csv"
+]
+
+dfs = []
+
+for f in files:
+    path = hf_hub_download(
+        repo_id="kkj7584/movie-embeddings",
+        filename=f,
+        repo_type="dataset"
+    )
+    
+    dfs.append(pd.read_csv(path))
+
+df = pd.concat(dfs).reset_index(drop=True)
 
 df = df.fillna("")
 df = df[
     (df["overview"].str.len() > 20) |
     (df["genres"].str.len() > 0)
 ].reset_index(drop=True)
+
+
+
 df = df[df['title'] != ""].reset_index(drop=True)
 df["year"] = df["year"].astype(str).str[:4]
 
+
+'''
 movie_texts = []
 
 for _, row in df.iterrows():
@@ -264,6 +293,14 @@ for _, row in df.iterrows():
     movie_texts.append(". ".join(parts))
 
 movie_embeddings = model.encode(movie_texts, normalize_embeddings=True)
+'''
+embedding_path = hf_hub_download(
+    repo_id="kkj7584/movie-embeddings",
+    filename="movie_embeddings.npy",
+    repo_type="dataset"
+)
+
+movie_embeddings = np.load(embedding_path)
 
 # 2. 서버 요청 & 응답
 @app.route("/") # 요청1 : http://127.0.0.1:80/

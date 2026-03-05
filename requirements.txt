@@ -1,6 +1,8 @@
 flask
-gunicorn
-sentence-transformers
-torch
-numpy
 pandas
+numpy
+sentence-transformers
+datasets
+huggingface_hub
+torch
+babel
