@@ -33,7 +33,7 @@ rows = []
 count = 1
 
 START_YEAR = 1976
-END_YEAR = 2025
+END_YEAR = 2026
 
 for year in range(START_YEAR, END_YEAR + 1):
     print(f"\n===== {year}년 수집 시작 =====")
