@@ -465,9 +465,12 @@ def result() :  # 응답 함수
         
     top_k_idx = np.argsort(scores)[-500:][::-1].tolist()
 
+    cnt=0
     for e in exact_idx:
         if e not in top_k_idx:
             top_k_idx.append(e)
+            if cnt>=5000:break
+            cnt+=1
     
     cnt=0
     for e in sec_exact_idx:
