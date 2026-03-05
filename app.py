@@ -213,7 +213,7 @@ country_dict = {
 import pandas as pd
 import glob
 
-path = "Crawled Data/*.csv"
+path = "Crawled_Data/*.csv"
 file_list = glob.glob(path)
 
 df_list = [pd.read_csv(file) for file in file_list]
@@ -268,7 +268,7 @@ movie_embeddings = model.encode(movie_texts, normalize_embeddings=True)
 # 2. 서버 요청 & 응답
 @app.route("/") # 요청1 : http://127.0.0.1:80/
 def index() : # 응답 함수 
-    return render_template('/index.html',genrep=genre) # 응답 페이지 
+    return render_template('index.html',genrep=genre) # 응답 페이지 
 
 def matchorder(oq,q,klang,kcount,method,t,ot,plang,pcount):
     if method=='title':
@@ -308,8 +308,6 @@ def result() :  # 응답 함수
     originq=query.lower()
     query = query.lower().replace(" ", "")
     query_embedding = model.encode(query, normalize_embeddings=True)
-
-    import numpy as np
 
     scores = np.dot(movie_embeddings, query_embedding)
     
@@ -484,12 +482,11 @@ def result() :  # 응답 함수
         v.append(df.iloc[idx]["vote_average"])
         p.append(df.iloc[idx]["poster_path"])
     
-    return render_template('/result.html',
+    return render_template('result.html',
                                     keywordq=realoriginq,title=t,original_title=o,languages=l,country=c,genre=g,year=y,overview=overv,vote=v,poster=p,genrep=genre,sg=selectedg,gys=getyear,meth=method) # 응답 페이지 
 
 
 # 프로그램 시작점 
 if __name__ == "__main__":
-    # Render 환경변수 PORT 사용, 없으면 4000으로 기본
-    port = int(os.environ.get("PORT", 4000))
+    port = int(os.environ.get("PORT", 7860))
     app.run(host="0.0.0.0", port=port)
