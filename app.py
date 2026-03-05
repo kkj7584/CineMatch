@@ -369,6 +369,7 @@ def result() :  # 응답 함수
     
     selectedg=[]
     sec_exact_idx=[]
+    st_exact_idx=[]
     if alls:
         selectedg.append('all')
         for g in genre:
@@ -396,6 +397,13 @@ def result() :  # 응답 함수
                 axis=1
             )
             sec_exact_idx = df[mask].index
+            
+            if len(sec_exact_idx)<500:
+                mask = df.apply(
+                    lambda row: keygenre[0] in str(row["genres"]),
+                    axis=1
+                )
+                st_exact_idx = df[mask].index
 
     keylang=[]
     for u,v in language_ko_map.items():
@@ -461,25 +469,44 @@ def result() :  # 응답 함수
         if e not in top_k_idx:
             top_k_idx.append(e)
     
+    cnt=0
     for e in sec_exact_idx:
         if e not in top_k_idx:
             top_k_idx.append(e)
+            if cnt>=5000:break
+            cnt+=1
     
+    cnt=0
+    for e in st_exact_idx:
+        if e not in top_k_idx:
+            top_k_idx.append(e)
+            if cnt>=5000:break
+            cnt+=1
+    
+    cnt=0
     for e in thr_exact_idx:
         if e not in top_k_idx:
             top_k_idx.append(e)
-            
+            if cnt>=5000:break
+            cnt+=1
+    
+    cnt=0
     for e in fth_exact_idx:
         if e not in top_k_idx:
             top_k_idx.append(e)
+            if cnt>=5000:break
+            cnt+=1
             
+    cnt=0
     for e in fif_exact_idx:
         if e not in top_k_idx:
             top_k_idx.append(e)
+            if cnt>=5000:break
+            cnt+=1
 
     top_k_idx = sorted(
         top_k_idx,
-        key=lambda x: (matchorder(originq,query,keylang,keycount,method,df.iloc[x]['title'],df.iloc[x]['original_title'],df.iloc[x]['languages'].split(', '),df.iloc[x]['countries'].split(', ')),1 if x in exact_idx else 0,1 if x in sec_exact_idx else 0,1 if x in thr_exact_idx else 0,1 if x in fth_exact_idx else 0,1 if x in fif_exact_idx else 0,df.iloc[x]['year'],-df.iloc[x]['no'])
+        key=lambda x: (matchorder(originq,query,keylang,keycount,method,df.iloc[x]['title'],df.iloc[x]['original_title'],df.iloc[x]['languages'].split(', '),df.iloc[x]['countries'].split(', ')),1 if x in exact_idx else 0,1 if x in sec_exact_idx else 0,1 if x in st_exact_idx else 0,1 if x in thr_exact_idx else 0,1 if x in fth_exact_idx else 0,1 if x in fif_exact_idx else 0,df.iloc[x]['year'],-df.iloc[x]['no'])
         )
     
     t=[]
