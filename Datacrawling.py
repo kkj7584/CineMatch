@@ -32,7 +32,7 @@ def movie_to_row(data, count):
 rows = []
 count = 1
 
-START_YEAR = 1980
+START_YEAR = 1976
 END_YEAR = 2025
 
 for year in range(START_YEAR, END_YEAR + 1):
