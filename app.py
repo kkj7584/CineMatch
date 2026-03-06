@@ -309,24 +309,29 @@ def index() : # 응답 함수
 
 def matchorder(oq,q,klang,kcount,method,t,ot,plang,pcount):
     if method=='title':
+        import re
         x1=t.lower()
         x2=ot.lower()
         t=t.lower().replace(' ','')
         ot=ot.lower().replace(' ','')
-       if x1==oq or x2==oq:
-           return 1
-       elif t==q or ot==q:
-           return 0.9
-       elif x1.startswith(oq) or x2.startswith(oq):
-           return 0.8
-       elif t.startswith(q) or ot.startswith(q):
-           return 0.7
-       elif oq in x1 or oq in x2:
-           return 0.6
-       elif q in x1 or q in x2:
-           return 0.3
-       else:
-           return 0
+        if x1==oq or x2==oq:
+            return 1
+        elif t==q or ot==q:
+            return 0.9
+        elif bool(re.match(rf'^{re.escape(oq)} (?:[1-9]|[1-4][0-9]|50)(?!\d)', x1)) or bool(re.match(rf'^{re.escape(oq)} (?:[1-9]|[1-4][0-9]|50)(?!\d)', x2)):
+            return 0.8
+        elif bool(re.match(rf'^{re.escape(q)}(?:[1-9]|[1-4][0-9]|50)(?!\d)', t)) or bool(re.match(rf'^{re.escape(q)}(?:[1-9]|[1-4][0-9]|50)(?!\d)', ot)):
+            return 0.7
+        elif x1.startswith(oq) or x2.startswith(oq):
+            return 0.6
+        elif t.startswith(q) or ot.startswith(q):
+            return 0.5
+        elif oq in x1 or oq in x2:
+            return 0.4
+        elif q in x1 or q in x2:
+            return 0.3
+        else:
+            return 0
     elif method=='language':
         nlang=[a for a in klang if (language_ko_map[a]).startswith(q)]
         for nl in nlang:
