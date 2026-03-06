@@ -255,6 +255,19 @@ df = df[
 df = df[df['title'] != ""].reset_index(drop=True)
 df["year"] = df["year"].astype(str).str[:4]
 
+# app 초기화 시 한 번만 실행
+df["countries_list"] = df["countries"].str.split(", ")
+df["languages_list"] = df["languages"].str.split(", ")
+
+# 앱 초기화 시 1회 실행
+country_index = {}  # {'KR': [0, 5, 23, ...], 'US': [...]}
+language_index = {}
+
+for idx, row in df.iterrows():
+    for c in row["countries_list"]:
+        country_index.setdefault(c, []).append(idx)
+    for l in row["languages_list"]:
+        language_index.setdefault(l, []).append(idx)
 
 '''
 movie_texts = []
