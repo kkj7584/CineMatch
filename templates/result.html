@@ -216,27 +216,35 @@
 
     <!-- 영화 1-5 -->
     <div class="results-container">
-        {% for i in range(10) %}
-        <div class="movie-card">
-            <img src="https://image.tmdb.org/t/p/w500{{poster[i]}}" alt="포스터 정보를 불러올 수 없습니다" class="poster">
-            <div class="movie-info">
-                <div class="title">{{title[i]}}</div>
-                <div class="original-title">{{original_title[i]}}</div>
-                <div class="meta">
-                    언어: {{languages[i]}}<br>
-                    국가: {{country[i]}}<br>
-                    장르: {{genre[i]}}<br>
-                    개봉연도: {{year[i]}}
-                </div>
-                <div class="overview">
-                    {{overview[i]}}
-                </div>
-                <div class="rating">
-                    평점: {{vote[i]}}
+        {% if topklength > 0 %}
+            {% for i in range(topklength) %}
+            <div class="movie-card">
+                <img src="https://image.tmdb.org/t/p/w500{{poster[i]}}" alt="포스터 정보를 불러올 수 없습니다" class="poster">
+                <div class="movie-info">
+                    <div class="title">{{title[i]}}</div>
+                    <div class="original-title">{{original_title[i]}}</div>
+                    <div class="meta">
+                        언어: {{languages[i]}}<br>
+                        국가: {{country[i]}}<br>
+                        장르: {{genre[i]}}<br>
+                        개봉연도: {{year[i]}}
+                    </div>
+                    <div class="overview">
+                        {{overview[i]}}
+                    </div>
+                    <div class="rating">
+                        평점: {{vote[i]}}
+                    </div>
                 </div>
             </div>
-        </div>
-        {% endfor %}
+            {% endfor %}
+        {% else %}
+            <div class="movie-card" style="display:flex; justify-content:center; align-items:center; height:220px;">
+                <div class="movie-info" style="text-align:center;">
+                    <div class="title">검색 결과가 없습니다.</div>
+                </div>
+            </div>
+        {% endif %}
     </div>
     <script>
         document.getElementById("all").addEventListener("change", function() {
