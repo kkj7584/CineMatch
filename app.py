@@ -321,6 +321,7 @@ def index() : # 응답 함수
     return render_template('index.html',genrep=genre) # 응답 페이지 
 
 def matchorder(oq,q,klang,kcount,method,t,ot,plang,pcount):
+    if not q:return 0
     if method=='title':
         import re
         x1=t.lower()
@@ -500,11 +501,13 @@ def result() :  # 응답 함수
     else:
         fif_exact_idx = []
     
-    if not query:
-        scores = np.dot(movie_embeddings, query_embedding)
-        top_k_idx_before = set(np.argsort(scores)[-5000:][::-1].tolist())
-    else:
-        top_k_idx_before = set()
+    # start
+    
+    #if not query:
+    #    scores = np.dot(movie_embeddings, query_embedding)
+    #    top_k_idx_before = set(np.argsort(scores)[-5000:][::-1].tolist())
+
+    top_k_idx_before = set()
     
     exact_idx     = set(exact_idx)
     sec_exact_idx = set(sec_exact_idx)
@@ -512,22 +515,20 @@ def result() :  # 응답 함수
     fif_exact_idx = set(fif_exact_idx)
     
     top_k_idx_before.update(exact_idx) # 제목 일치 인덱스 - 쿼리 기반
+    if not query :
+        for e in sec_exact_idx: # 장르 all 일치 인덱스 - 쿼리 기반 아님 - alls가 false면 필터링
+            top_k_idx_before.add(e)
+            if len(top_k_idx_before)>=10000:
+                break
+        for e in st_exact_idx: # 장르 any 일치 인덱스 - 쿼리 기반 아님
+            top_k_idx_before.add(e)
+            if len(top_k_idx_before)>=20000:
+                break
+        for e in fif_exact_idx: # 연도 일치 인덱스 - 쿼리 기반 아님 - getyear!='all'이면 필터링
+            top_k_idx_before.add(e)
+            if len(top_k_idx_before)>=30000:
+                break
     
-    '''
-    cnt=0
-    for e in sec_exact_idx: # 장르 all 일치 인덱스 - 쿼리 기반 아님 - alls가 false면 필터링
-        if e not in top_k_idx_before:
-            top_k_idx_before.append(e)
-            if cnt>=5000:break
-            cnt+=1
-    
-    cnt=0
-    for e in st_exact_idx: # 장르 any 일치 인덱스 - 쿼리 기반 아님
-        if e not in top_k_idx_before:
-            top_k_idx_before.append(e)
-            if cnt>=5000:break
-            cnt+=1
-    '''
     
     top_k_idx_before.update(thr_exact_idx) # 언어 all 일치 인덱스 - 쿼리 기반
 
@@ -537,14 +538,7 @@ def result() :  # 응답 함수
     
     top_k_idx_before.update(fth2_exact_idx) # 국가 any 일치 인덱스 - 쿼리 기반
     
-    '''
-    cnt=0
-    for e in fif_exact_idx: # 연도 일치 인덱스 - 쿼리 기반 아님 - getyear!='all'이면 필터링
-        if e not in top_k_idx_before:
-            top_k_idx_before.append(e)
-            if cnt>=5000:break
-            cnt+=1
-    '''
+    # end
     
     top_k_idx=[]
     for indexes in top_k_idx_before:
