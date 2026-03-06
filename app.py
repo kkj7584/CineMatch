@@ -326,10 +326,12 @@ def matchorder(oq,q,klang,kcount,method,t,ot,plang,pcount):
             return 0.6
         elif t.startswith(q) or ot.startswith(q):
             return 0.5
-        elif oq in x1 or oq in x2:
+        elif q in x1.split(' ') or q in x2.split(' '):
             return 0.4
-        elif q in x1 or q in x2:
+        elif oq in x1 or oq in x2:
             return 0.3
+        elif q in x1 or q in x2:
+            return 0.2
         else:
             return 0
     elif method=='language':
