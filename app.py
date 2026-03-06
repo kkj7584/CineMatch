@@ -322,6 +322,8 @@ def matchorder(oq,q,klang,kcount,method,t,ot,plang,pcount):
             return 0.8
         elif q and (bool(re.match(rf'^{re.escape(q)}(?:[1-9]|[1-4][0-9]|50)(?!\d)', t)) or bool(re.match(rf'^{re.escape(q)}(?:[1-9]|[1-4][0-9]|50)(?!\d)', ot))):
             return 0.7
+        elif ((q in x1.split(' ')) and t.startswith(q)) or ((q in x2.split(' ')) and ot.startswith(q)):
+            return 0.65
         elif x1.startswith(oq) or x2.startswith(oq):
             return 0.6
         elif t.startswith(q) or ot.startswith(q):
@@ -442,6 +444,8 @@ def result() :  # 응답 함수
         thr_exact_idx=df[mask].index
 
     keycount=[]
+    if '한국' in query:
+        keycount.append('KR')
     for u,v in country_dict.items():
         if v==query:
             keycount.append(u)
