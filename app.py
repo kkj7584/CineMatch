@@ -45,7 +45,7 @@ language_ko_map = {
 "Indonesian": "인도네시아어",
 "Hindi": "힌디어",
 "Persian": "페르시아어",
-"Mandarin": "중국어(표준어)",
+"Mandarin": "중국어",
 "Finnish": "핀란드어",
 "Tamil": "타밀어",
 "Cantonese": "광둥어",
