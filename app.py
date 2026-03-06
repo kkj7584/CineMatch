@@ -422,44 +422,67 @@ def result() :  # 응답 함수
                 st_exact_idx = df[mask].index
 
     keylang=[]
-    for u,v in language_ko_map.items():
-        if v==query or v==query+'어':
-            keylang.append(u)
-            break
+    
+    splitq1=query.split(',')
+    splitq2=originq.split(' ')
+    splitq=list(set(splitq1+splitq2))
+    
+    for sq in splitq:
+        if not sq:continue
+        for u,v in language_ko_map.items():
+            if v==sq or v==sq+'어':
+                keylang.append(u)
+                break
+            
     if keylang==[]:
         for u,v in language_ko_map.items():
             if query in v:
                 keylang.append(u)
     
     thr_exact_idx=[]
+    thr2_exact_idx=[]
     
     if len(keylang)>0 and method=='language':
         mask = df.apply(
-            lambda row: any(
+            lambda row: all(
             g in [str(css) for css in row["languages"].split(', ')]
             for g in keylang
             ),
             axis=1
         )
         thr_exact_idx=df[mask].index
+        if len(keylang)>1:
+            mask = df.apply(
+                lambda row: any(
+                g in [str(css) for css in row["languages"].split(', ')]
+                for g in keylang
+                ),
+                axis=1
+            )
+            thr2_exact_idx=df[mask].index
 
     keycount=[]
     if '한국' in query:
         keycount.append('KR')
-    for u,v in country_dict.items():
-        if v==query:
-            keycount.append(u)
-            break
+        
+    for sq in splitq:
+        if not sq:continue
+        for u,v in country_dict.items():
+            if v==sq:
+                keycount.append(u)
+                break
+            
     if keycount==[]:
         for u,v in country_dict.items():
             if query in v:
                 keycount.append(u)
     
-    fth_exact_idx=[]
+    fth_exact_idx=[]    
+    fth2_exact_idx=[]
     
     if len(keycount)>0 and method=='country':
         mask = df.apply(
-            lambda row: any(
+            lambda row: all(
             g in [str(css) for css in row["countries"].split(', ')]
             for g in keycount
             ),
@@ -467,6 +490,16 @@ def result() :  # 응답 함수
         )
 
         fth_exact_idx=df[mask].index
+        if len(keycount)>1:
+            mask = df.apply(
+                lambda row: any(
+                g in [str(css) for css in row["countries"].split(', ')]
+                for g in keycount
+                ),
+                axis=1
+            )
+
+            fth2_exact_idx=df[mask].index
     
     getyear=request.form.get('year')
     import re
@@ -512,7 +545,21 @@ def result() :  # 응답 함수
             cnt+=1
     
     cnt=0
+    for e in thr2_exact_idx:
+        if e not in top_k_idx:
+            top_k_idx.append(e)
+            if cnt>=5000:break
+            cnt+=1
+    
+    cnt=0
     for e in fth_exact_idx:
+        if e not in top_k_idx:
+            top_k_idx.append(e)
+            if cnt>=5000:break
+            cnt+=1
+    
+    cnt=0
+    for e in fth2_exact_idx:
         if e not in top_k_idx:
             top_k_idx.append(e)
             if cnt>=5000:break
@@ -527,7 +574,7 @@ def result() :  # 응답 함수
 
     top_k_idx = sorted(
         top_k_idx,
-        key=lambda x: (matchorder(originq,query,keylang,keycount,method,df.iloc[x]['title'],df.iloc[x]['original_title'],df.iloc[x]['languages'].split(', '),df.iloc[x]['countries'].split(', ')),1 if x in exact_idx else 0,1 if x in sec_exact_idx else 0,1 if x in st_exact_idx else 0,1 if x in thr_exact_idx else 0,1 if x in fth_exact_idx else 0,1 if x in fif_exact_idx else 0,df.iloc[x]['year'],-df.iloc[x]['no'])
+        key=lambda x: (matchorder(originq,query,keylang,keycount,method,df.iloc[x]['title'],df.iloc[x]['original_title'],df.iloc[x]['languages'].split(', '),df.iloc[x]['countries'].split(', ')),1 if x in exact_idx else 0,1 if x in sec_exact_idx else 0,1 if x in st_exact_idx else 0,1 if x in thr_exact_idx else 0,1 if x in thr2_exact_idx else 0,1 if x in fth_exact_idx else 0,1 if x in fth2_exact_idx else 0,1 if x in fif_exact_idx else 0,df.iloc[x]['year'],-df.iloc[x]['no'])
         )
     
     t=[]
