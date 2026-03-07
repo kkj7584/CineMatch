@@ -713,7 +713,7 @@ def result() :  # 응답 함수
     v=[]
     p=[]
     
-    for idx in top_k_idx[-1:-(min(10,len(top_k_idx))+1):-1]:
+    for idx in top_k_idx[:min(10, len(top_k_idx))]:
         t.append(titles[idx])
         o.append(original_titles[idx])
         
