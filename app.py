@@ -11,9 +11,9 @@ import os
 # 1. app 객체 생성 
 app = Flask(__name__) 
 
-from sentence_transformers import SentenceTransformer # 모델 불러오기
-model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2") # 모델 불러오기
-import numpy as np
+# from sentence_transformers import SentenceTransformer # 모델 불러오기
+# model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2") # 모델 불러오기
+# import numpy as np
 
 genre=['드라마', '범죄', '로맨스', '공포', '스릴러', '액션', '모험', 'SF', '코미디', '역사', '미스터리', 'TV 영화', '가족', '전쟁', '애니메이션', '서부', '다큐멘터리', '판타지', '음악']
 language_ko_map = {
@@ -211,7 +211,8 @@ country_dict = {
 }
 
 import pandas as pd
-import glob
+# import glob
+import re
 from huggingface_hub import hf_hub_download
 
 '''
@@ -269,6 +270,12 @@ for idx, row in df.iterrows():
     for l in row["languages_list"]:
         language_index.setdefault(l, []).append(idx)
 
+genre_index = {}
+
+for idx, row in df.iterrows():
+    for g in row["genres"].split(", "):
+        genre_index.setdefault(g, set()).add(idx)
+
 '''
 movie_texts = []
 
@@ -307,6 +314,8 @@ for _, row in df.iterrows():
 
 movie_embeddings = model.encode(movie_texts, normalize_embeddings=True)
 '''
+
+'''
 embedding_path = hf_hub_download(
     repo_id="kkj7584/movie-embeddings",
     filename="movie_embeddings.npy",
@@ -314,6 +323,7 @@ embedding_path = hf_hub_download(
 )
 
 movie_embeddings = np.load(embedding_path)
+'''
 
 # 2. 서버 요청 & 응답
 @app.route("/") # 요청1 : http://127.0.0.1:80/
@@ -323,7 +333,6 @@ def index() : # 응답 함수
 def matchorder(oq,q,klang,kcount,method,t,ot,plang,pcount):
     if not q:return 0
     if method=='title':
-        import re
         x1=t.lower()
         x2=ot.lower()
         t=t.lower().replace(' ','')
@@ -373,7 +382,7 @@ def result() :  # 응답 함수
     realoriginq=query
     originq=query.lower()
     query = query.lower().replace(" ", "")
-    query_embedding = model.encode(query, normalize_embeddings=True)
+    # query_embedding = model.encode(query, normalize_embeddings=True)
     
     exact_idx=[]
     
@@ -395,46 +404,26 @@ def result() :  # 응답 함수
     alls=request.form.get('all')
     
     selectedg=[]
-    sec_exact_idx=[]
-    st_exact_idx=[]
+    sec_exact_idx=set()
+    st_exact_idx=set()
     if alls:
         selectedg.append('all')
         for g in genre:
+            if not query:keygenre.append(g)
             selectedg.append(g)
     else:
         for g in genre:
-            if g.lower() in query:
+            if request.form.get(g):
                 keygenre.append(g)
-            else:
-                if request.form.get(g):
-                    keygenre.append(g)
-                    selectedg.append(g)
-    
-        if '스릴' in query and '스릴러' not in keygenre:
-            keygenre.append('스릴러')
-        if 'tv' in query and 'TV 영화' not in keygenre:
-            keygenre.append('TV 영화')
-        
-        if len(keygenre)>0:
-            mask = df.apply(
-                lambda row: all(
-                g in str(row["genres"])
-                for g in keygenre
-                ),
-                axis=1
-            )
-            sec_exact_idx = df[mask].index
-            
-            if len(sec_exact_idx)<500:
-                mask = df.apply(
-                    lambda row: any(
-                    g in str(row["genres"])
-                    for g in keygenre
-                    ),
-                    axis=1
-                )
-                st_exact_idx = df[mask].index
-                
+                selectedg.append(g)
+         
+    if len(keygenre)>0:
+        sets = [genre_index.get(g, set()) for g in keygenre]
+
+        sec_exact_idx = sets[0].intersection(*sets[1:])
+
+        if len(sec_exact_idx) < 50000:
+            st_exact_idx = sets[0].union(*sets[1:])
 
     keylang=[]
     
@@ -454,8 +443,8 @@ def result() :  # 응답 함수
             if query in v:
                 keylang.append(u)
     
-    thr_exact_idx=[]
-    thr2_exact_idx=[]
+    thr_exact_idx=set()
+    thr2_exact_idx=set()
     
     if len(keylang)>0 and method=='language':
         sets = [set(language_index.get(l, [])) for l in keylang]
@@ -464,7 +453,7 @@ def result() :  # 응답 함수
             thr2_exact_idx = sets[0].union(*sets[1:])    # any
 
     keycount=[]
-    if '한국' in query:
+    if '한국' in query and method=='country':
         keycount.append('KR')
     
     for sq in splitq:
@@ -479,8 +468,8 @@ def result() :  # 응답 함수
             if query in v:
                 keycount.append(u)
     
-    fth_exact_idx=[]
-    fth2_exact_idx=[]
+    fth_exact_idx=set()
+    fth2_exact_idx=set()
 
     if len(keycount)>0 and method=='country':
         sets = [set(country_index.get(c, [])) for c in keycount]
@@ -489,18 +478,11 @@ def result() :  # 응답 함수
             fth2_exact_idx = sets[0].union(*sets[1:]) # any
     
     getyear=request.form.get('year')
-    import re
-    year_match = re.search(r"(\d{4})년", query)
 
-    if getyear!='all' or year_match:
-        if getyear!='all':
-            year=getyear
-        elif year_match:
-            year = year_match.group(1)
-        fif_exact_idx = df[df["year"] == year].index.tolist()
+    if getyear!='all':
+        fif_exact_idx = df[df["year"] == getyear].index.tolist()
     else:
         fif_exact_idx = []
-    
     # start
     
     #if not query:
@@ -510,25 +492,24 @@ def result() :  # 응답 함수
     top_k_idx_before = set()
     
     exact_idx     = set(exact_idx)
-    sec_exact_idx = set(sec_exact_idx)
-    st_exact_idx  = set(st_exact_idx)
     fif_exact_idx = set(fif_exact_idx)
     
     top_k_idx_before.update(exact_idx) # 제목 일치 인덱스 - 쿼리 기반
     if not query :
-        for e in sec_exact_idx: # 장르 all 일치 인덱스 - 쿼리 기반 아님 - alls가 false면 필터링
-            top_k_idx_before.add(e)
-            if len(top_k_idx_before)>=10000:
-                break
-        for e in st_exact_idx: # 장르 any 일치 인덱스 - 쿼리 기반 아님
-            top_k_idx_before.add(e)
-            if len(top_k_idx_before)>=20000:
-                break
-        for e in fif_exact_idx: # 연도 일치 인덱스 - 쿼리 기반 아님 - getyear!='all'이면 필터링
-            top_k_idx_before.add(e)
-            if len(top_k_idx_before)>=30000:
-                break
-    
+        if getyear!='all':
+            for e in fif_exact_idx: # 연도 일치 인덱스 - 쿼리 기반 아님 - getyear!='all'이면 필터링
+                top_k_idx_before.add(e)
+                if len(top_k_idx_before)>=10000:
+                    break
+        else:
+            for e in sorted(sec_exact_idx, key=lambda x: (df.iloc[x]["year"],-df.iloc[x]['no']), reverse=True): # 장르 all 일치 인덱스 - 쿼리 기반 아님 - alls가 false면 필터링
+                top_k_idx_before.add(e)
+                if len(top_k_idx_before)>=10000:
+                    break
+            for e in sorted(st_exact_idx, key=lambda x: (df.iloc[x]["year"],-df.iloc[x]['no']), reverse=True): # 장르 any 일치 인덱스 - 쿼리 기반 아님
+                top_k_idx_before.add(e)
+                if len(top_k_idx_before)>=20000:
+                    break    
     
     top_k_idx_before.update(thr_exact_idx) # 언어 all 일치 인덱스 - 쿼리 기반
 
@@ -545,28 +526,124 @@ def result() :  # 응답 함수
         if not alls:
             if (indexes not in sec_exact_idx) and (indexes not in st_exact_idx):
                 continue
-        if getyear!='all' or year_match:
+        if getyear!='all':
             if (indexes not in fif_exact_idx):
                 continue
         top_k_idx.append(indexes)
     
-    scores_map = {
-        x: matchorder(originq,query,keylang,keycount,method,df.iloc[x]['title'],df.iloc[x]['original_title'],df.iloc[x]['languages'].split(', '),df.iloc[x]['countries'].split(', '))
-        for x in top_k_idx
+    if query:
+        scores_map = {
+            x: matchorder(originq,query,keylang,keycount,method,df.iloc[x]['title'],df.iloc[x]['original_title'],df.iloc[x]['languages'].split(', '),df.iloc[x]['countries'].split(', '))
+            for x in top_k_idx
+            }
+    else:
+        scores_map={}
+    
+    if getyear=='all':
+        dfilocxyear={
+            x:df.iloc[x]['year']
+            for x in top_k_idx
         }
-    dfilocxyear={
-        x:df.iloc[x]['year']
-        for x in top_k_idx
-        }
+    else:
+        dfilocxyear={}
+        
     dfilocxno={
         x:df.iloc[x]['no']
         for x in top_k_idx
         }
-
-    top_k_idx = sorted(
-        top_k_idx,
-        key=lambda x: (scores_map[x],1 if x in sec_exact_idx else 0,1 if x in st_exact_idx else 0,1 if x in thr_exact_idx else 0,1 if x in thr2_exact_idx else 0,1 if x in fth_exact_idx else 0,1 if x in fth2_exact_idx else 0,dfilocxyear[x],-dfilocxno[x])
-        )
+    
+    if not query:
+        if alls:
+            if getyear!='all':
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (-dfilocxno[x])
+                )
+            else:
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (dfilocxyear[x],-dfilocxno[x])
+                )
+        else:
+            if getyear!='all':
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (1 if x in sec_exact_idx else 0,1 if x in st_exact_idx else 0,-dfilocxno[x])
+                )
+            else:
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (1 if x in sec_exact_idx else 0,1 if x in st_exact_idx else 0,dfilocxyear[x],-dfilocxno[x])
+                )
+    elif method=='title':
+        if alls:
+            if getyear!='all':
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (scores_map[x],-dfilocxno[x])
+                )
+            else:
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (scores_map[x],dfilocxyear[x],-dfilocxno[x])
+                )
+        else:
+            if getyear!='all':
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (scores_map[x],1 if x in sec_exact_idx else 0,1 if x in st_exact_idx else 0,-dfilocxno[x])
+                )
+            else:
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (scores_map[x],1 if x in sec_exact_idx else 0,1 if x in st_exact_idx else 0,dfilocxyear[x],-dfilocxno[x])
+                )
+    elif method=='language':
+        if alls:
+            if getyear!='all':
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (scores_map[x],1 if x in thr_exact_idx else 0,1 if x in thr2_exact_idx else 0,-dfilocxno[x])
+                )
+            else:
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (scores_map[x],1 if x in thr_exact_idx else 0,1 if x in thr2_exact_idx else 0,dfilocxyear[x],-dfilocxno[x])
+                )
+        else:
+            if getyear!='all':
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (scores_map[x],1 if x in sec_exact_idx else 0,1 if x in st_exact_idx else 0,1 if x in thr_exact_idx else 0,1 if x in thr2_exact_idx else 0,-dfilocxno[x])
+                )
+            else:
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (scores_map[x],1 if x in sec_exact_idx else 0,1 if x in st_exact_idx else 0,1 if x in thr_exact_idx else 0,1 if x in thr2_exact_idx else 0,dfilocxyear[x],-dfilocxno[x])
+                )
+    elif method=='country':
+        if alls:
+            if getyear!='all':
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (scores_map[x],1 if x in fth_exact_idx else 0,1 if x in fth2_exact_idx else 0,-dfilocxno[x])
+                )
+            else:
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (scores_map[x],1 if x in fth_exact_idx else 0,1 if x in fth2_exact_idx else 0,dfilocxyear[x],-dfilocxno[x])
+                )
+        else:
+            if getyear!='all':
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (scores_map[x],1 if x in sec_exact_idx else 0,1 if x in st_exact_idx else 0,1 if x in fth_exact_idx else 0,1 if x in fth2_exact_idx else 0,-dfilocxno[x])
+                )
+            else:
+                top_k_idx = sorted(
+                    top_k_idx,
+                    key=lambda x: (scores_map[x],1 if x in sec_exact_idx else 0,1 if x in st_exact_idx else 0,1 if x in fth_exact_idx else 0,1 if x in fth2_exact_idx else 0,dfilocxyear[x],-dfilocxno[x])
+                )
     
     t=[]
     o=[]
