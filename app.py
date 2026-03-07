@@ -565,7 +565,7 @@ def result() :  # 응답 함수
 
     top_k_idx = sorted(
         top_k_idx,
-        key=lambda x: (scores_map[x],1 if x in exact_idx else 0,1 if x in sec_exact_idx else 0,1 if x in st_exact_idx else 0,1 if x in thr_exact_idx else 0,1 if x in thr2_exact_idx else 0,1 if x in fth_exact_idx else 0,1 if x in fth2_exact_idx else 0,1 if x in fif_exact_idx else 0,dfilocxyear[x],-dfilocxno[x])
+        key=lambda x: (scores_map[x],1 if x in sec_exact_idx else 0,1 if x in st_exact_idx else 0,1 if x in thr_exact_idx else 0,1 if x in thr2_exact_idx else 0,1 if x in fth_exact_idx else 0,1 if x in fth2_exact_idx else 0,dfilocxyear[x],-dfilocxno[x])
         )
     
     t=[]
