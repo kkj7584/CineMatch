@@ -411,6 +411,8 @@ def matchorder(tls,ols,x1,x2,t,ot,oq,q,klang,kcount,method,plang,pcount):
             return 0.5
         elif q in tls or q in ols:
             return 0.4
+        elif any(aaa.startswith(q) for aaa in tls) or any(aaa.startswith(q) for aaa in ols):
+            return 0.35
         elif oq in x1 or oq in x2:
             return 0.3
         elif q in x1 or q in x2:
