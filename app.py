@@ -214,6 +214,7 @@ import pandas as pd
 # import glob
 import re
 import heapq
+from collections import Counter
 from huggingface_hub import hf_hub_download
 
 '''
@@ -403,6 +404,10 @@ def matchorder(tls,ols,x1,x2,t,ot,oq,q,klang,kcount,method,plang,pcount):
             return 0.8
         elif q and (bool(re.match(rf'^{re.escape(q)}(?:[1-9]|[1-4][0-9]|50)(?!\d)', t)) or bool(re.match(rf'^{re.escape(q)}(?:[1-9]|[1-4][0-9]|50)(?!\d)', ot))):
             return 0.7
+        elif oq and (bool(re.match(rf'^{re.escape(oq)}: .*',x1)) or bool(re.match(rf'^{re.escape(oq)}: .*', x2))):
+            return 0.69
+        elif q and (bool(re.match(rf'^{re.escape(q)}:.*',t)) or bool(re.match(rf'^{re.escape(q)}:.*', ot))):
+            return 0.68
         elif ((q in tls) and t.startswith(q)) or ((q in ols) and ot.startswith(q)):
             return 0.65
         elif x1.startswith(oq) or x2.startswith(oq):
@@ -463,7 +468,41 @@ def result() :  # 응답 함수
                 )
 
             exact_idx = set.intersection(*sets) if sets else set()
+    
+    typo_correction=False
+    if (not exact_idx) and query and method=='title':
+        typo_correction=True
+        # 1~5 글자 substring 생성
+        parts = set()
+        for i in range(len(query)):
+            for j in range(i + 1, min(i + 6, len(query) + 1)):
+                parts.add(query[i:j])
 
+        counter = Counter()
+
+        # posting list lookup
+        for p in parts:
+            idx_set = title_index.get(p)
+            if not idx_set:
+                continue
+
+            weight = len(p)   # substring 길이 가중치
+
+            for idx in idx_set:
+                counter[idx] += weight
+
+        if not counter:
+            exact_idx = set()
+        else:
+            # threshold (너무 잡다한 결과 제거)
+            threshold = max(2, len(query))
+
+            exact_idx = {
+                (idx, score)
+                for idx, score in counter.items()
+                if score >= threshold
+            }
+        
     keygenre=[]
     
     alls=request.form.get('all')
@@ -595,16 +634,26 @@ def result() :  # 응답 함수
     # end
     
     top_k_idx=[]
-    for indexes in top_k_idx_before:
-        if not alls:
-            if (indexes not in sec_exact_idx) and (indexes not in st_exact_idx):
-                continue
-        if getyear!='all':
-            if (indexes not in fif_exact_idx):
-                continue
-        top_k_idx.append(indexes)
+    if typo_correction:
+        for indexes,thisscore in top_k_idx_before:
+            if not alls:
+                if (indexes not in sec_exact_idx) and (indexes not in st_exact_idx):
+                    continue
+            if getyear!='all':
+                if (indexes not in fif_exact_idx):
+                    continue
+            top_k_idx.append((indexes,thisscore))
+    else:
+        for indexes in top_k_idx_before:
+            if not alls:
+                if (indexes not in sec_exact_idx) and (indexes not in st_exact_idx):
+                    continue
+            if getyear!='all':
+                if (indexes not in fif_exact_idx):
+                    continue
+            top_k_idx.append(indexes)
     
-    if query:
+    if query and (not typo_correction):
         scores_map = {
             x: matchorder(titles_lowered_splited[x],otitles_lowered_splited[x],titles_lowered[x],otitles_lowered[x],titles_removed_space[x],otitles_removed_space[x],originq,query,keylang,keycount,method,languages_all[x],countries_all[x])
             for x in top_k_idx
@@ -638,26 +687,50 @@ def result() :  # 응답 함수
     elif method=='title':
         if alls:
             if getyear!='all':
-                top_k_idx = heapq.nlargest(10,
-                    top_k_idx,
-                    key=lambda x: (scores_map[x],-nos[x])
-                )
+                if typo_correction:
+                    top_k_idx = heapq.nlargest(10,
+                        top_k_idx,
+                        key=lambda x: (x[1],-nos[x[0]])
+                    )
+                else:
+                    top_k_idx = heapq.nlargest(10,
+                        top_k_idx,
+                        key=lambda x: (scores_map[x],-nos[x])
+                    )
             else:
-                top_k_idx = heapq.nlargest(10,
-                    top_k_idx,
-                    key=lambda x: (scores_map[x],years_all[x],-nos[x])
-                )
+                if typo_correction:
+                    top_k_idx = heapq.nlargest(10,
+                        top_k_idx,
+                        key=lambda x: (x[1],years_all[x[0]],-nos[x[0]])
+                    )
+                else:
+                    top_k_idx = heapq.nlargest(10,
+                        top_k_idx,
+                        key=lambda x: (scores_map[x],years_all[x],-nos[x])
+                    )
         else:
             if getyear!='all':
-                top_k_idx = heapq.nlargest(10,
-                    top_k_idx,
-                    key=lambda x: (scores_map[x],x in sec_exact_idx,x in st_exact_idx,-nos[x])
-                )
+                if typo_correction:
+                    top_k_idx = heapq.nlargest(10,
+                        top_k_idx,
+                        key=lambda x: (x[0] in sec_exact_idx,x[0] in st_exact_idx,x[1],-nos[x[0]])
+                    )
+                else:
+                    top_k_idx = heapq.nlargest(10,
+                        top_k_idx,
+                        key=lambda x: (scores_map[x],x in sec_exact_idx,x in st_exact_idx,-nos[x])
+                    )
             else:
-                top_k_idx = heapq.nlargest(10,
-                    top_k_idx,
-                    key=lambda x: (scores_map[x],x in sec_exact_idx,x in st_exact_idx,years_all[x],-nos[x])
-                )
+                if typo_correction:
+                    top_k_idx = heapq.nlargest(10,
+                        top_k_idx,
+                        key=lambda x: (x[0] in sec_exact_idx,x[0] in st_exact_idx,x[1],years_all[x[0]],-nos[x[0]])
+                    )
+                else:
+                    top_k_idx = heapq.nlargest(10,
+                        top_k_idx,
+                        key=lambda x: (scores_map[x],x in sec_exact_idx,x in st_exact_idx,years_all[x],-nos[x])
+                    )
     elif method=='language':
         if alls:
             if getyear!='all':
@@ -714,6 +787,9 @@ def result() :  # 응답 함수
     overv=[]
     v=[]
     p=[]
+    
+    if typo_correction:
+        top_k_idx=[alpha for alpha,beta in top_k_idx]
     
     for idx in top_k_idx[:min(10, len(top_k_idx))]:
         t.append(titles[idx])
