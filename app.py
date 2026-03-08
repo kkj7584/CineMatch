@@ -400,9 +400,9 @@ def matchorder(tls,ols,x1,x2,t,ot,oq,q,klang,kcount,method,plang,pcount):
             return 1
         elif t==q or ot==q:
             return 0.9
-        elif oq and (bool(re.match(rf'^{re.escape(oq)} (?:[1-9]|[1-4][0-9]|50)(?!\d)', x1)) or bool(re.match(rf'^{re.escape(oq)} (?:[1-9]|[1-4][0-9]|50)(?!\d)', x2))):
+        elif oq and (bool(re.match(rf'^{re.escape(oq)} (?:[1-9]|[1-4][0-9]|50)(?!\d).*', x1)) or bool(re.match(rf'^{re.escape(oq)} (?:[1-9]|[1-4][0-9]|50)(?!\d).*', x2))):
             return 0.8
-        elif q and (bool(re.match(rf'^{re.escape(q)}(?:[1-9]|[1-4][0-9]|50)(?!\d)', t)) or bool(re.match(rf'^{re.escape(q)}(?:[1-9]|[1-4][0-9]|50)(?!\d)', ot))):
+        elif q and (bool(re.match(rf'^{re.escape(q)}(?:[1-9]|[1-4][0-9]|50)(?!\d).*', t)) or bool(re.match(rf'^{re.escape(q)}(?:[1-9]|[1-4][0-9]|50)(?!\d).*', ot))):
             return 0.7
         elif oq and (bool(re.match(rf'^{re.escape(oq)}: .*',x1)) or bool(re.match(rf'^{re.escape(oq)}: .*', x2))):
             return 0.69
