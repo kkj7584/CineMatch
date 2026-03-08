@@ -191,7 +191,7 @@
                         <button type="submit">검색</button>
                     </div>
                     <select name="year" id="year">
-                        <option value="all" {% if gys=="all" %} selected {% endif %}>개봉년도 전체</option>
+                        <option value="all" {% if gys=="all" %} selected {% endif %}>개봉연도 전체</option>
                         {% for y in range(1976, 2027) | reverse %}
                         <option value="{{ y }}" {% if gys and gys|int == y %} selected {% endif %}>{{ y }}년</option>
                         {% endfor %}
