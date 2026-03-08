@@ -495,7 +495,7 @@ def result() :  # 응답 함수
             exact_idx = set()
         else:
             # threshold (너무 잡다한 결과 제거)
-            threshold = max(1, len(query))
+            threshold = len(query)
 
             exact_idx = {
                 ((idx, score) if (len(query)!=len(titles_removed_space[idx]) and len(query)!=len(otitles_removed_space[idx])) else (idx,score*10))
