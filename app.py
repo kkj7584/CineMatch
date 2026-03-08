@@ -438,6 +438,32 @@ def matchorder(tls,ols,x1,x2,t,ot,oq,q,klang,kcount,method,plang,pcount):
         return 0
     return 0
 
+def typocorrectscore(q,i,s):
+    if any('가' <= aaa <= '힣' for aaa in q) and any('가' <= aaa <= '힣' for aaa in titles_removed_space[i]):
+        if len(q)==len(titles_removed_space[i]):
+            return (i,s*3)
+        elif abs(len(q)-len(titles_removed_space[i]))<=1:
+            return (i,s*2)
+        else:
+            return (i,s)
+    elif (not any('가' <= aaa <= '힣' for aaa in q)) and (not any('가' <= aaa <= '힣' for aaa in titles_removed_space[i])):
+        if len(q)==len(titles_removed_space[i]):
+            return (i,s*3)
+        elif abs(len(q)-len(titles_removed_space[i]))<=1:
+            return (i,s*2)
+        else:
+            return (i,s)
+    elif any('가' <= aaa <= '힣' for aaa in q) and (not any('가' <= aaa <= '힣' for aaa in titles_removed_space[i])):
+        return (i,s)
+    elif (not any('가' <= aaa <= '힣' for aaa in q)) and any('가' <= aaa <= '힣' for aaa in titles_removed_space[i]):
+        if len(q)==len(otitles_removed_space[i]):
+            return (i,s*3)
+        elif abs(len(q)-len(otitles_removed_space[i]))<=1:
+            return (i,s*2)
+        else:
+            return (i,s)
+    return (i,s)
+
 @app.route('/result', methods=['POST']) # post방식 전송 
 def result() :  # 응답 함수
     
@@ -498,7 +524,7 @@ def result() :  # 응답 함수
             threshold = len(query)
 
             exact_idx = {
-                ((idx, score) if (len(query)!=len(titles_removed_space[idx]) and len(query)!=len(otitles_removed_space[idx])) else (idx,score*10))
+                typocorrectscore(query,idx,score)
                 for idx, score in counter.items()
                 if score >= threshold
             }
