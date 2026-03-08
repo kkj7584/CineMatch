@@ -498,7 +498,7 @@ def result() :  # 응답 함수
             threshold = max(2, len(query))
 
             exact_idx = {
-                (idx, score)
+                ((idx, score) if (len(query)!=len(titles_removed_space[idx]) and len(query)!=len(otitles_removed_space[idx])) else (idx,score*10))
                 for idx, score in counter.items()
                 if score >= threshold
             }
