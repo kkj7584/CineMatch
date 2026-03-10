@@ -567,13 +567,13 @@ def result() :  # 응답 함수
     for sq in splitq:
         if not sq:continue
         for u,v in language_ko_map.items():
-            if v==sq or v==sq+'어':
+            if v.replace(" ", "")==sq or v.replace(" ", "")==sq+'어':
                 keylang.append(u)
                 break
 
     if keylang==[]:
         for u,v in language_ko_map.items():
-            if query in v:
+            if query in (v.replace(" ", "")):
                 keylang.append(u)
     
     thr_exact_idx=set()
@@ -596,13 +596,13 @@ def result() :  # 응답 함수
     for sq in splitq:
         if not sq:continue
         for u,v in country_dict.items():
-            if v==sq:
+            if v.replace(" ", "")==sq:
                 keycount.append(u)
                 break
             
     if keycount==[]:
         for u,v in country_dict.items():
-            if query in v:
+            if query in v.replace(" ", ""):
                 keycount.append(u)
     
     fth_exact_idx=set()
